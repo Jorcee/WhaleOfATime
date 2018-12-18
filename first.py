@@ -12,6 +12,8 @@ from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
+img_size = 64
+
 image_path = "./smallimages/"
 save_path = "./smallimages/"
 print("Loading Mapping info")
@@ -25,18 +27,25 @@ print("Loading Images")
 images = []
 count = 1
 for image in image_names:
-    img = cv2.resize(cv2.imread(image_path + image),(28,28))
+    img = cv2.resize(cv2.imread(image_path + image, 0),(img_size,img_size))
     print(count)
     count +=1
     images.append(img)
     #cv2.imwrite(save_path + image, img)
 
+cv2.imshow("test",images[np.random.randint(0,high=len(images))])
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 images = np.array(images)
+images = images / 255.0
+images = np.reshape(images,(-1, img_size, img_size, 1))
 print("Images Loaded")
 print("Building Train and Test Sets")
 ids = np.array(ids)
 print(images.shape)
-input_shape = (28,28,3)
+
+input_shape = (img_size,img_size,1)
+
 label_encoder = LabelEncoder()
 integer_encoded = label_encoder.fit_transform(ids)
 onehot_encoder = OneHotEncoder(sparse=False)
@@ -68,13 +77,17 @@ model.compile(loss=categorical_crossentropy,
               metrics=['accuracy'])
 print("Model Compiled")
 print("Training Model")
-batch_size = 1
+batch_size = 50
 num_epoch = 1
+# model_log = model.fit(train_x, train_y,
+#           batch_size=batch_size,
+#           epochs=num_epoch,
+#           verbose=1,
+#           validation_data=(test_x, test_y))
 model_log = model.fit(train_x, train_y,
           batch_size=batch_size,
           epochs=num_epoch,
-          verbose=1,
-          validation_data=(test_x, test_y))
+          verbose=1)
 print("Model Trained")
 print("Testing Model")
 score = model.evaluate(test_x, test_y, verbose=1)
