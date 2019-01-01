@@ -11,17 +11,19 @@ from keras.optimizers import Adadelta
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.metrics import f1_score
+img_size = 128
 
-img_size = 64
-
-image_path = "./smallimages/"
+image_path = "./images/"
 save_path = "./smallimages/"
 print("Loading Mapping info")
-map = pd.read_csv("train.csv")
-ids = map["Id"]
-image_names = map["Image"]
+img_map = pd.read_csv("train.csv")
+img_map = img_map[img_map['Id'] != 'new_whale']
+ids = img_map["Id"]
+image_names = img_map["Image"]
 unique_ids = set(ids)
 num_ids = len(unique_ids)
+print(unique_ids)
 print("Mapping Info Loaded")
 print("Loading Images")
 images = []
@@ -32,7 +34,6 @@ for image in image_names:
     count +=1
     images.append(img)
     #cv2.imwrite(save_path + image, img)
-
 cv2.imshow("test",images[np.random.randint(0,high=len(images))])
 cv2.waitKey(0)
 cv2.destroyAllWindows()
@@ -51,13 +52,16 @@ integer_encoded = label_encoder.fit_transform(ids)
 onehot_encoder = OneHotEncoder(sparse=False)
 integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
 labels = onehot_encoder.fit_transform(integer_encoded)
-train_x, test_x, train_y, test_y = train_test_split(images, labels, test_size=.3)
+train_x, test_x, train_y, test_y = train_test_split(images, labels, test_size=.1)
 print(train_x.shape)
 print(test_x.shape)
 print(train_y.shape)
 print(test_y.shape)
 print("Train and Tests sets built")
 print("Building Model")
+
+input_shape = (img_size,img_size,1)
+
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3),
                  activation='relu',
@@ -69,7 +73,6 @@ model.add(Flatten())
 model.add(Dense(128, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(num_ids, activation='softmax'))
-
 print("Model Built")
 print("Compiling Model")
 model.compile(loss=categorical_crossentropy,
@@ -90,6 +93,17 @@ model_log = model.fit(train_x, train_y,
           verbose=1)
 print("Model Trained")
 print("Testing Model")
+# pred = []
+# for i in range(len(test_x)):
+#     conf = model.predict_proba(test_x[i])
+#     print(conf)
+#     if conf.max < .5:
+#         pred.append("new_whale")
+#     else:
+#         pred.append(model.predict(test_x[i]))
+
 score = model.evaluate(test_x, test_y, verbose=1)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
+pred = model.predict_classes(test_x)
+print(pred)
